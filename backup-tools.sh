@@ -2,48 +2,37 @@
 
 # backup-tools.sh
 # A lightweight utility for creating and managing file backups with timestamps
-# Author: Dimitrios Tsarouchas
-# License: MIT
-# GitHub: https://github.com/USERNAME/bash-backup-tool
-
-# Set strict error handling
-set -euo pipefail
-IFS=$'\n\t'
 
 # Color definitions
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly NC='\033[0m' # No Color
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
 # Version
-readonly VERSION="1.0.0"
+VERSION="1.0.0"
 
 # Help message
 show_help() {
-    cat << EOF
-Backup Tools ${VERSION}
-A utility for creating and managing file backups with timestamps.
-
-Usage:
-    backup <filename>              Create a backup of the specified file
-    list_backups <filename>        List all backups of the specified file
-    restore_backup <backup_file>   Restore a specific backup file
-    clean_backups <filename>       Remove old backups keeping the latest N versions
-
-Options:
-    -h, --help      Show this help message
-    -v, --version   Show version information
-
-Examples:
-    backup config.json
-    list_backups config.json
-    restore_backup config.json.backup-20241122_143000
-    clean_backups config.json 5
-
-For more information, visit: https://github.com/USERNAME/bash-backup-tool
-EOF
+    echo "Backup Tools ${VERSION}"
+    echo "A utility for creating and managing file backups with timestamps."
+    echo
+    echo "Usage:"
+    echo "    backup <filename>              Create a backup of the specified file"
+    echo "    list_backups <filename>        List all backups of the specified file"
+    echo "    restore_backup <backup_file>   Restore a specific backup file"
+    echo "    clean_backups <filename>       Remove old backups keeping the latest N versions"
+    echo
+    echo "Options:"
+    echo "    -h, --help      Show this help message"
+    echo "    -v, --version   Show version information"
+    echo
+    echo "Examples:"
+    echo "    backup config.json"
+    echo "    list_backups config.json"
+    echo "    restore_backup config.json.backup-20241122_143000"
+    echo "    clean_backups config.json 5"
 }
 
 # Version information
@@ -53,17 +42,16 @@ show_version() {
 
 # Logger function
 log() {
-    local level=$1
+    _level=$1
     shift
-    local message=$*
-    local timestamp
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    _message=$*
+    _timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     
-    case "$level" in
-        "INFO")  echo -e "${BLUE}[INFO ]${NC} ${timestamp} - $message" ;;
-        "ERROR") echo -e "${RED}[ERROR]${NC} ${timestamp} - $message" >&2 ;;
-        "WARN")  echo -e "${YELLOW}[WARN ]${NC} ${timestamp} - $message" ;;
-        "SUCCESS") echo -e "${GREEN}[OK   ]${NC} ${timestamp} - $message" ;;
+    case "$_level" in
+        "INFO")  printf "%b[INFO ]%b %s - %s\n" "${BLUE}" "${NC}" "${_timestamp}" "${_message}" ;;
+        "ERROR") printf "%b[ERROR]%b %s - %s\n" "${RED}" "${NC}" "${_timestamp}" "${_message}" >&2 ;;
+        "WARN")  printf "%b[WARN ]%b %s - %s\n" "${YELLOW}" "${NC}" "${_timestamp}" "${_message}" ;;
+        "SUCCESS") printf "%b[OK   ]%b %s - %s\n" "${GREEN}" "${NC}" "${_timestamp}" "${_message}" ;;
     esac
 }
 
@@ -75,18 +63,17 @@ backup() {
         return 1
     fi
 
-    local source_file=$1
+    source_file=$1
     
     # Check if file exists
     if [ ! -f "$source_file" ]; then
         log "ERROR" "File '$source_file' not found"
         return 1
-    }
+    fi
 
     # Create backup filename with timestamp
-    local timestamp
     timestamp=$(date +%Y%m%d_%H%M%S)
-    local backup_file="${source_file}.backup-${timestamp}"
+    backup_file="${source_file}.backup-${timestamp}"
 
     # Perform the backup
     if cp "$source_file" "$backup_file"; then
@@ -104,22 +91,21 @@ list_backups() {
     if [ $# -eq 0 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
         show_help
         return 1
-    }
+    fi
 
-    local base_file=$1
-    local backup_count=0
+    base_file=$1
+    backup_count=0
     
     log "INFO" "Listing backups for $base_file:"
     echo "----------------------------------------"
     
-    while IFS= read -r backup; do
-        ((backup_count++))
-        local timestamp
-        timestamp=$(echo "$backup" | grep -o "backup-[0-9_]\+" | cut -d'-' -f2)
-        local size
-        size=$(ls -lh "$backup" | awk '{print $5}')
-        echo -e "${BLUE}$backup_count.${NC} $(basename "$backup") ${YELLOW}($size)${NC}"
-    done < <(ls -1 "$base_file".backup-* 2>/dev/null | sort -r)
+    for backup in "$base_file".backup-*; do
+        if [ -f "$backup" ]; then
+            backup_count=$((backup_count + 1))
+            size=$(ls -lh "$backup" | awk '{print $5}')
+            echo -e "${BLUE}$backup_count.${NC} $(basename "$backup") ${YELLOW}($size)${NC}"
+        fi
+    done
     
     if [ "$backup_count" -eq 0 ]; then
         log "WARN" "No backups found for $base_file"
@@ -135,23 +121,23 @@ restore_backup() {
     if [ $# -eq 0 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
         show_help
         return 1
-    }
+    fi
 
-    local backup_file=$1
+    backup_file=$1
     
     # Check if backup file exists
     if [ ! -f "$backup_file" ]; then
         log "ERROR" "Backup file '$backup_file' not found"
         return 1
-    }
+    fi
     
     # Extract original filename
-    local original_file
     original_file=${backup_file%.backup-*}
     
     # Check if original file exists and prompt for overwrite
     if [ -f "$original_file" ]; then
-        read -rp "$(echo -e "${YELLOW}Original file exists. Overwrite? (y/n):${NC} ")" answer
+        printf "%bOriginal file exists. Overwrite? (y/n):%b " "${YELLOW}" "${NC}"
+        read -r answer
         if [ "$answer" != "y" ]; then
             log "WARN" "Restoration cancelled"
             return 1
@@ -172,23 +158,20 @@ clean_backups() {
     if [ $# -lt 2 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
         show_help
         return 1
-    }
+    fi
 
-    local base_file=$1
-    local keep_count=$2
+    base_file=$1
+    keep_count=$2
     
     # Validate keep_count is a number
     if ! [[ "$keep_count" =~ ^[0-9]+$ ]]; then
         log "ERROR" "Please provide a valid number for backups to keep"
         return 1
-    }
+    fi
     
-    local backup_files=()
-    while IFS= read -r backup; do
-        backup_files+=("$backup")
-    done < <(ls -1 "$base_file".backup-* 2>/dev/null | sort -r)
-    
-    local total_backups=${#backup_files[@]}
+    # Get all backups sorted by date (newest first)
+    mapfile -t backup_files < <(ls -1 "$base_file".backup-* 2>/dev/null | sort -r)
+    total_backups=${#backup_files[@]}
     
     if [ "$total_backups" -eq 0 ]; then
         log "WARN" "No backups found for $base_file"
@@ -200,7 +183,7 @@ clean_backups() {
         return 0
     fi
     
-    local delete_count=$((total_backups - keep_count))
+    delete_count=$((total_backups - keep_count))
     log "INFO" "Removing $delete_count old backup(s)..."
     
     for ((i=keep_count; i<total_backups; i++)); do
@@ -215,23 +198,30 @@ clean_backups() {
 }
 
 # Main execution
-main() {
-    # Process command line arguments
-    case "${1:-}" in
-        "-h"|"--help")
-            show_help
-            ;;
-        "-v"|"--version")
-            show_version
-            ;;
-        *)
-            # Default behavior is to show help
-            show_help
-            ;;
-    esac
-}
-
-# If script is being executed directly (not sourced), run main
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
+case "${1:-}" in
+    "-h"|"--help")
+        show_help
+        ;;
+    "-v"|"--version")
+        show_version
+        ;;
+    "backup")
+        shift
+        backup "$@"
+        ;;
+    "list_backups")
+        shift
+        list_backups "$@"
+        ;;
+    "restore_backup")
+        shift
+        restore_backup "$@"
+        ;;
+    "clean_backups")
+        shift
+        clean_backups "$@"
+        ;;
+    *)
+        show_help
+        ;;
+esac

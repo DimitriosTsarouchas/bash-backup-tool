@@ -21,8 +21,8 @@ A lightweight, zero-dependency Bash utility for creating and managing file backu
 
 ```bash
 curl -o ~/.backup-tools.sh https://raw.githubusercontent.com/DimitriosTsarouchas/bash-backup-tool/main/backup-tools.sh
-echo 'source ~/.backup-tools.sh' >> ~/.bashrc
-source ~/.bashrc
+chmod +x backup-tools.sh
+./backup-tools.sh -h
 ```
 
 ### Option 2: Manual Installation
@@ -34,8 +34,8 @@ git clone https://github.com/DimitriosTsarouchas/bash-backup-tool.git
 
 2. Add to your shell configuration:
 ```bash
-echo 'source /path/to/bash-backup-tool/backup-tools.sh' >> ~/.bashrc
-source ~/.bashrc
+chmod +x backup-tools.sh
+./backup-tools.sh -h
 ```
 
 ## 📖 Usage
