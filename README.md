@@ -44,25 +44,25 @@ chmod +x backup-tools.sh
 
 ```bash
 # Basic usage
-backup config.json
+./backup-tools.sh backup config.json
 # Output: [OK   ] 2024-11-22 14:30:00 - Created backup: config.json.backup-20241122_143000
 
 # The function will validate the file exists
-backup nonexistent.txt
+./backup-tools.sh backup nonexistent.txt
 # Output: [ERROR] 2024-11-22 14:30:00 - File 'nonexistent.txt' not found
 ```
 
 ### List Backups
 
 ```bash
-list_backups config.json
+./backup-tools.sh list_backups config.json
 # Shows all backups of config.json with timestamps and sizes
 ```
 
 ### Restore a Backup
 
 ```bash
-restore_backup config.json.backup-20241122_143000
+./backup-tools.sh restore_backup config.json.backup-20241122_143000
 # Prompts for confirmation if original file exists
 ```
 
@@ -70,7 +70,7 @@ restore_backup config.json.backup-20241122_143000
 
 ```bash
 # Keep the 5 most recent backups and remove older ones
-clean_backups config.json 5
+./backup-tools.sh clean_backups config.json 5
 ```
 
 ## 🌟 Advanced Features
